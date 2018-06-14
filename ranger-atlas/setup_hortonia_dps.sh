@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Launch Centos 7 Vm 
 # Then run:
-# curl -sSL ttps://github.com/hw-rdobson/masterclass/edit/master/ranger-atlas/setup_hortonia_dps.sh/raw | sudo -E sh  
+# curl -sSL https://github.com/hw-rdobson/masterclass/edit/master/ranger-atlas/setup_hortonia_dps.sh/raw | sudo -E sh  
 
 ########################################################################
 ########################################################################
