@@ -13,8 +13,6 @@ export TERM=xterm
 output=`curl -u admin:admin -i -H 'X-Requested-By: ambari'  http://localhost:8080/api/v1/clusters`
  
 CLUSTER=`echo $output | sed -n 's/.*"cluster_name" : "\([^\"]*\)".*/\1/p'`
- 
-echo $CLUSTER
 #overridable vars
 export stack=$CLUSTER    #cluster name
 export ambari_pass=${ambari_pass:-admin}  #ambari password
