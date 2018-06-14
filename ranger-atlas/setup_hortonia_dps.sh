@@ -191,9 +191,6 @@ fi
 
 sed -i.bak "s/\[security\]/\[security\]\nforce_https_protocol=PROTOCOL_TLSv1_2/"   /etc/ambari-agent/conf/ambari-agent.ini
 
-#sudo ambari-agent restart
-	
-    sleep 40
     service ambari-server status
     #curl -u admin:${ambari_pass} -i -H "X-Requested-By: blah" -X GET ${ambari_url}/hosts
     #./deploy-recommended-cluster.bash
@@ -453,4 +450,3 @@ echo "Automated portion of setup is complete, next please create the tag repo in
 echo "See https://github.com/abajwa-hw/masterclass/blob/master/ranger-atlas/README.md for more details"
 echo "Once complete, see here for walk through of demo: https://community.hortonworks.com/articles/151939/hdp-securitygovernance-demo-kit.html"
 
-fi
