@@ -54,7 +54,7 @@ export USER_CLEARTEXT_PASS="BadPass#1" #Default for all demo users
 export ambari_password="${ambari_pass}"
 export cluster_name=${stack}
 export recommendation_strategy="ALWAYS_APPLY_DONT_OVERRIDE_CUSTOM_VALUES"
-export install_ambari_server=true
+export install_ambari_server=false
 export deploy=true
 
 export host=$(hostname -f)
@@ -65,113 +65,6 @@ export ambari_host=$(hostname -f)
 
 export install_ambari_server ambari_pass host_count ambari_services
 export ambari_password cluster_name recommendation_strategy
-
-
-########################################################################
-########################################################################
-##
-cd
-
-yum makecache fast
-# sudo yum localinstall -y https://dev.mysql.com/get/mysql57-community-release-el7-8.noarch.rpm
-# yum -y -q install git epel-release ntp screen mysql-community-server mysql-connector-java postgresql-jdbc jq python-argparse python-configobj nc ack
-
-#Local repo for MariaDB 10.2.x - tested version
-
-cat << EOF > /etc/yum.repos.d/MariaDB.repo
-# MariaDB 10.2 CentOS repository list - created 2018-06-13 14:24 UTC
-# http://downloads.mariadb.org/mariadb/repositories/
-[mariadb]
-name = MariaDB
-baseurl = http://yum.mariadb.org/10.2/centos7-amd64
-gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck=1
-EOF
-
-#Package installs
-yum -y -q install git epel-release ntp screen MariaDB-server MariaDB-client MariaDB-shared MariaDB-common mysql-connector-java postgresql-jdbc jq python-argparse python-configobj nc ack
-
-#Script installs
-curl -sSL -o add_user.sh https://gist.github.com/wcbdata/e138530642575e309c18d3f90e1938b6/raw
-chmod gou+x add_user.sh
-
-#Example LDAP add user:
-#./add_user.sh -n admintest -c admintest -s Test -e admintest -m admintest@hortonworks.com -a
-
-################################
-# MySQL/MariaDB Setup using mysql sytntax
-echo Database setup...
-# Disable the services that conflict with the Ambari "MySQL Server" component startup
-sudo systemctl disable mariadb.service
-sudo systemctl disable mysqld.service
-sudo systemctl enable mysql
-sudo service mysql start # This syntax is required for Ambari to be able to start and stop the "MySQL Server" component 
-
-#extract system generated Mysql password
-#oldpass=$( grep 'temporary.*root@localhost' /var/log/mysqld.log | tail -n 1 | sed 's/.*root@localhost: //' )
-#create sql file that
-# 1. reset Mysql password to temp value and create druid/superset/registry/streamline schemas and users
-# 2. sets passwords for druid/superset/registry/streamline users to ${db_password}
-#TODO: update script to handle multiple hostnames, host-specific MySQL privs
-cat << EOF > mysql-setup.sql
-#ALTER USER 'root'@'localhost' IDENTIFIED BY 'Secur1ty!'; 
-SET PASSWORD = PASSWORD('Secur1ty!');
-#uninstall plugin validate_password; #only needed on MySQL
-#Set global defaults for storage
-SET storage_engine = INNODB;
-SET GLOBAL innodb_file_format = BARRACUDA;
-SET GLOBAL innodb_large_prefix = ON;
-SET GLOBAL innodb_default_row_format = DYNAMIC;
-#Create user and database for profiler
-CREATE DATABASE profileragent DEFAULT CHARACTER SET latin1; 
-CREATE USER 'profileragent'@'%' IDENTIFIED BY '${dss_db_pass}'; 
-GRANT ALL PRIVILEGES ON profileragent.* TO 'profileragent'@'%' WITH GRANT OPTION ; 
-CREATE USER 'profileragent'@'${host}' IDENTIFIED BY '${dss_db_pass}'; 
-GRANT ALL PRIVILEGES ON profileragent.* TO 'profileragent'@'${host}' WITH GRANT OPTION ; 
-#Create user and database for Hive (needed because we are already running a MySQL instance)
-CREATE DATABASE hive DEFAULT CHARACTER SET utf8; 
-CREATE USER 'hive'@'%' IDENTIFIED BY '${hive_db_password}'; 
-GRANT ALL PRIVILEGES ON hive.* TO 'hive'@'%' WITH GRANT OPTION ; 
-CREATE USER 'hive'@'${host}' IDENTIFIED BY '${hive_db_password}'; 
-GRANT ALL PRIVILEGES ON hive.* TO 'profileragent'@'${host}' WITH GRANT OPTION ; 
-#Create user and database for Beacon (needed because we are already running a MySQL instance)
-CREATE DATABASE beacon DEFAULT CHARACTER SET utf8; 
-CREATE USER 'beacon'@'%' IDENTIFIED BY '${beacon_db_password}'; 
-GRANT ALL PRIVILEGES ON beacon.* TO 'beacon'@'%' WITH GRANT OPTION ; 
-CREATE USER 'beacon'@'${host}' IDENTIFIED BY '${beacon_db_password}'; 
-GRANT ALL PRIVILEGES ON beacon.* TO 'beacon'@'${host}' WITH GRANT OPTION ; 
-commit; 
-FLUSH PRIVILEGES;
-EOF
-
-#Make sure mysql (MariaDB) service uis running
-while ! service mysql status; 
-  do 
-    echo "Waiting for mysql service ..."; 
-    echo " If taking too long, use <service mysql start> from another ssh session";
-    echo " to start or troubleshoot.";
-    sleep 10;
-  done
-
-#execute sql file
-#mysql -h localhost -u root -p"$oldpass" --connect-expired-password < mysql-setup.sql
-mysql -h localhost -u root < mysql-setup.sql
-#change Mysql password to ${db_password}
-mysqladmin -u root -p'Secur1ty!' password ${db_password}
-#test password and confirm dbs created
-mysql -u root -p${db_password} -e 'show databases;'
-
-#Set my.cnf settings to allow long indexes (innodb/barracuda/large_prefix/row_format)
-#Required for MariaDB 10.1.x, may not be needed for 10.2.x
-# sed -i '/^\[server\]/a\innodb_default_row_format = DYNAMIC' /etc/my.cnf.d/server.cnf
-# sed -i '/^\[server\]/a\innodb_large_prefix = ON' /etc/my.cnf.d/server.cnf
-# sed -i '/^\[server\]/a\innodb_file_format = BARRACUDA' /etc/my.cnf.d/server.cnf
-
-
-###################################
-echo Installing Ambari ...
-curl -sSL https://raw.githubusercontent.com/seanorama/ambari-bootstrap/master/extras/deploy/install-ambari-bootstrap.sh | bash
-
 
 ########################################################################
 ########################################################################
@@ -196,128 +89,7 @@ useradd dpprofiler
 ########################################################################
 ##
 
-#install MySql community rpm
-#sudo rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
 
-#install Ambari
-echo "running prep-hosts.sh ..."
-~/ambari-bootstrap/extras/deploy/prep-hosts.sh
-echo "running ambari-bootstrap.sh ..."
-~/ambari-bootstrap/ambari-bootstrap.sh
-
-## Ambari Server specific tasks
-if [ "${install_ambari_server}" = "true" ]; then
-
-    sleep 30
-
-#    curl -v -k -u admin:admin -H "X-Requested-By:ambari" -X POST http://localhost:8080/api/v1/version_definitions -d @- <<EOF
-#{  "VersionDefinition": {   "version_url": "${hdp_vdf}" } }
-#EOF
-
-    ## add admin user to postgres for other services, such as Ranger
-    cd /tmp
-    sudo -u postgres createuser -U postgres -d -e -E -l -r -s admin
-    sudo -u postgres psql -c "ALTER USER admin PASSWORD 'BadPass#1'";
-    printf "\nhost\tall\tall\t0.0.0.0/0\tmd5\n" >> /var/lib/pgsql/data/pg_hba.conf
-    #systemctl restart postgresql
-    service postgresql restart
-
-    ## bug workaround:
-    sed -i "s/\(^    total_sinks_count = \)0$/\11/" /var/lib/ambari-server/resources/stacks/HDP/2.0.6/services/stack_advisor.py
-
-
-    #Configure beacon mpack and install
-
-    echo "Installing beacon mpack..."
-    cd /tmp
-    wget ${dlm_mpack_url}
-    tar -xvzf beacon-ambari-mpack-*.tar.gz
-    cp beacon-ambari-mpack-*/addon-services/BEACON/1.1.0/repos/repoinfo.xml ./repoinfo.xml.bak
-
-    path=$(ls /tmp/beacon-ambari-mpack-*/addon-services/BEACON/1.1.0/repos/repoinfo.xml)
-    cat << EOF > ${path}
-    <reposinfo>
-        <latest>http://s3.amazonaws.com/dev.hortonworks.com/DLM/dlm_urlinfo.json</latest>
-        <os family="redhat7">
-            <repo>
-                <baseurl>${dlm_url}</baseurl>
-                <repoid>DLM-1.1</repoid>
-                <reponame>DLM</reponame>
-            </repo>
-        </os>
-    </reposinfo>
-EOF
-
-    cat beacon-ambari-mpack-*/addon-services/BEACON/1.1.0/repos/repoinfo.xml
-    sleep 30
-    tar -zcvf beacon-ambari-mpack.tar.gz beacon-ambari-mpack-*
-    sudo ambari-server install-mpack --verbose --mpack=/tmp/beacon-ambari-mpack.tar.gz
-
-    
-    sleep 5
-
-    #Configure profiler mpack and install
-    
-    echo "Installing profiler mpack..."
-    
-    cd /tmp
-    wget ${dss_mpack_url}
-    tar -xvzf dpprofiler-ambari-mpack-*.tar.gz
-    cp dpprofiler-ambari-mpack-*/addon-services/DPPROFILER/1.0.0/repos/repoinfo.xml ./repoinfo.xml.bak
-
-    path=$(ls /tmp/dpprofiler-ambari-mpack-*/addon-services/DPPROFILER/1.0.0/repos/repoinfo.xml)
-    cat << EOF > ${path}
-    <reposinfo>
-        <latest>http://s3.amazonaws.com/dev.hortonworks.com/DLM/dss_urlinfo.json</latest>
-        <os family="redhat7">
-            <repo>
-                <baseurl>${dss_url}</baseurl>
-                <repoid>DSS-1.0</repoid>
-                <reponame>DSS</reponame>
-            </repo>
-        </os>
-    </reposinfo>
-EOF
-
-    cat dpprofiler-ambari-mpack-*/addon-services/DPPROFILER/1.0.0/repos/repoinfo.xml
-    sleep 30
-    tar -zcvf dpprofiler-ambari-mpack.tar.gz dpprofiler-ambari-mpack-*
-    sudo ambari-server install-mpack --verbose --mpack=/tmp/dpprofiler-ambari-mpack.tar.gz
-
-
-    bash -c "nohup ambari-server restart" || true
-
-    wget ${dss_repo} -P /etc/yum.repos.d/ 
-    wget ${dlm_repo} -P /etc/yum.repos.d/ 
-    
-    ambari_pass=admin source ~/ambari-bootstrap/extras/ambari_functions.sh
-    #until [ $(ambari_pass=BadPass#1 ${ambari_curl}/hosts -o /dev/null -w "%{http_code}") -eq "200" ]; do
-    #    sleep 1
-    #done
-
-    echo "Checking to make sure Ambari is up before setting up drivers ..."
-
-    while ! echo exit | nc localhost 8080; do echo "waiting for Ambari to come up..."; sleep 10; done
-    sleep 10
-    ambari_change_pass admin admin ${ambari_pass}
-
-    yum -y install postgresql-jdbc
-    ambari-server setup --jdbc-db=postgres --jdbc-driver=/usr/share/java/postgresql-jdbc.jar
-    ambari-server setup --jdbc-db=mysql --jdbc-driver=/usr/share/java/mysql-connector-java.jar
-
-    cd ~/ambari-bootstrap/deploy
-
-
-	if [ "${enable_hive_acid}" = true  ]; then
-		acid_hive_env="\"hive-env\": { \"hive_txn_acid\": \"on\" }"
-
-		acid_hive_site="\"hive.support.concurrency\": \"true\","
-		acid_hive_site+="\"hive.compactor.initiator.on\": \"true\","
-		acid_hive_site+="\"hive.compactor.worker.threads\": \"1\","
-		acid_hive_site+="\"hive.enforce.bucketing\": \"true\","
-		acid_hive_site+="\"hive.exec.dynamic.partition.mode\": \"nonstrict\","
-		acid_hive_site+="\"hive.txn.manager\": \"org.apache.hadoop.hive.ql.lockmgr.DbTxnManager\","
-	fi
 
         ## various configuration changes for demo environments, and fixes to defaults
 cat << EOF > configuration-custom.json
@@ -331,27 +103,7 @@ cat << EOF > configuration-custom.json
         "hadoop.proxyuser.root.users": "admin",
         "fs.trash.interval": "4320"
     },
-    "beacon-env": {
-        "beacon_database" : "Existing MySQL / MariaDB Database",
-	"beacon_store_url" : "jdbc:mysql://${host}/beacon",
-        "beacon_store_user" : "beacon",
-        "beacon_store_validate_connection" : "false",
-	"beacon_store_db_name" : "beacon",
-	"beacon_store_password" : "${beacon_db_password}",
-	"beacon_store_driver" : "com.mysql.jdbc.Driver"
-    },
-    "dpprofiler-config": {
-        "dpprofiler.db.database" : "profileragent",
-        "dpprofiler.db.driver" : "com.mysql.jdbc.Driver",
-        "dpprofiler.db.host" : "${host}",
-        "dpprofiler.db.jdbc.url" : "jdbc:mysql://${host}:3306/profileragent?autoreconnect=true",
-        "dpprofiler.db.password" : "${dss_db_pass}",
-        "dpprofiler.db.slick.driver" : "slick.driver.MySQLDriver$",
-        "dpprofiler.db.type" : "mysql",
-        "dpprofiler.db.user" : "profileragent",
-	"dpprofiler.spnego.signature.secret" : "${dss_spnego_secret}",
-	"livy.session.config" : "\n            session {\n                lifetime {\n                    minutes = 2880\n                    requests = 500\n                }\n                max.errors = 40\n                starting.message = \"java.lang.IllegalStateException: Session is in state starting\"\n                dead.message = \"java.lang.IllegalStateException: Session is in state dead\"\n                config {\n                    read {\n                        name = \"dpprofiler-read\"\n                         heartbeatTimeoutInSecond = 172800\n                         timeoutInSeconds = 90\n                         driverMemory = \"1G\"\n                         executorMemory = \"1G\"\n                         numExecutors = 1\n                        executorCores = 1\n                     }\n                     write {\n                        name = \"dpprofiler-write\"\n                        heartbeatTimeoutInSecond = 172800\n                        timeoutInSeconds = 90\n                        driverMemory = \"1G\"\n                        executorMemory = \"1G\"\n                        numExecutors = 1\n                        executorCores = 1\n                     }\n                }\n            }"
-    },
+ 
     "hdfs-site": {
       "dfs.namenode.safemode.threshold-pct": "0.99"
     },
