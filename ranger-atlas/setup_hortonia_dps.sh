@@ -55,7 +55,7 @@ export ambari_password="${ambari_pass}"
 export cluster_name=${stack}
 export recommendation_strategy="ALWAYS_APPLY_DONT_OVERRIDE_CUSTOM_VALUES"
 export install_ambari_server=false
-export deploy=true
+export deploy=false
 
 export host=$(hostname -f)
 export ambari_host=$(hostname -f)
