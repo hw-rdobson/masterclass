@@ -29,19 +29,6 @@ export db_password=${db_password:-StrongPassword}
 export hive_db_password=${hive_db_password:-H!veRox} #using default user hive on existing MariaDB database
 export beacon_db_password=${beacon_db_password:-8eaconRox} #using default user beacon on existing MariaDB database
 
-#Mpacks to add
-export dss_url="http://s3.amazonaws.com/dev.hortonworks.com/DSS/centos7/1.x/BUILDS/1.1.0.0-125"
-export dss_mpack_url="${dss_url}/tars/dataplane_profilers/dpprofiler-ambari-mpack-1.0.0.1.1.0.0-125.tar.gz"
-export dss_repo="${dss_url}/dssbn.repo"
-
-export dlm_url="http://s3.amazonaws.com/dev.hortonworks.com/DLM/centos7/1.x/BUILDS/1.1.0.0-185"
-export dlm_mpack_url="${dlm_url}/tars/beacon/beacon-ambari-mpack-1.1.0.0-185.tar.gz"
-export dlm_repo="${dlm_mpack_url}/dlmbn.repo"
-
-#Variables for DSS
-export dss_spnego_secret=${dss_spnego_secret:-some$ecretThisIs}
-export dss_db_pass=${dss_db_pass:-H@doob} #using default user profileragent on existing MariaDB database
-
 #LDAP Setup Variables
 export LDAP_BASE="dc=hortonworks,dc=com"
 export LDAP_ACCOUNTS_DN="ou=users,${LDAP_BASE}"
