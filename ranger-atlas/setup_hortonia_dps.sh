@@ -9,9 +9,14 @@
 
 export HOME=${HOME:-/root}
 export TERM=xterm
-
+#detect name of cluster
+output=`curl -u admin:admin -i -H 'X-Requested-By: ambari'  http://localhost:8080/api/v1/clusters`
+ 
+CLUSTER=`echo $output | sed -n 's/.*"cluster_name" : "\([^\"]*\)".*/\1/p'`
+ 
+echo $CLUSTER
 #overridable vars
-export stack=${stack:-hdp}    #cluster name
+export stack=$CLUSTER    #cluster name
 export ambari_pass=${ambari_pass:-admin}  #ambari password
 export ambari_services=${ambari_services:-HBASE HDFS MAPREDUCE2 PIG YARN HIVE ZOOKEEPER SLIDER AMBARI_INFRA TEZ RANGER ATLAS KAFKA SPARK2 ZEPPELIN KNOX BEACON DPPROFILER}   #HDP services
 export ambari_stack_version=${ambari_stack_version:-2.6}  #HDP Version
