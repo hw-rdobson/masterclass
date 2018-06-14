@@ -201,38 +201,13 @@ fi
 
 sed -i.bak "s/\[security\]/\[security\]\nforce_https_protocol=PROTOCOL_TLSv1_2/"   /etc/ambari-agent/conf/ambari-agent.ini
 
-sudo ambari-agent restart
+#sudo ambari-agent restart
 	
     sleep 40
     service ambari-server status
     #curl -u admin:${ambari_pass} -i -H "X-Requested-By: blah" -X GET ${ambari_url}/hosts
     #./deploy-recommended-cluster.bash
 
-    if [ "${deploy}" = "true" ]; then
-
-        cd ~
-        sleep 20
-        source ~/ambari-bootstrap/extras/ambari_functions.sh
-        ambari_configs
-        ambari_wait_request_complete 1
-        sleep 5
-
-        #Needed due to BUG-91977: Blueprint bug in Ambari 2.6.0.0
-        if ! nc localhost 6080 ; then
-           echo "Ranger did not start. Restarting..."
-
-           curl -u admin:${ambari_pass} -i -H 'X-Requested-By: ambari' -X PUT -d '{"RequestInfo": {"context" :"Start RANGER via REST"}, "Body": {"ServiceInfo": {"state": "STARTED"}}}' http://localhost:8080/api/v1/clusters/${cluster_name}/services/RANGER
-           sleep 5
-
-           echo "Starting all services..."
-           curl -u admin:${ambari_pass} -i -H "X-Requested-By: blah" -X PUT -d  '{"RequestInfo":{"context":"_PARSE_.START.ALL_SERVICES","operation_level":{"level":"CLUSTER","cluster_name":"'"${cluster_name}"'"}},"Body":{"ServiceInfo":{"state":"STARTED"}}}' http://localhost:8080/api/v1/clusters/${cluster_name}/services
-
-           while ! echo exit | nc localhost 21000; do echo "waiting for services to start...."; sleep 10; done
-           while ! echo exit | nc localhost 10000; do echo "waiting for hive to come up..."; sleep 10; done
-           while ! echo exit | nc localhost 50111; do echo "waiting for hcat to come up..."; sleep 10; done
-        fi
-
-        sleep 30
 
         echo "Adding Hortonia local users ..."
     
