@@ -88,7 +88,8 @@ useradd dpprofiler
 ########################################################################
 ########################################################################
 ##
-
+if [ "${enable_hive_acid}" = true  ]; then
+		acid_hive_env="\"hive-env\": { \"hive_txn_acid\": \"on\" }"
 
 
         ## various configuration changes for demo environments, and fixes to defaults
@@ -103,7 +104,6 @@ cat << EOF > configuration-custom.json
         "hadoop.proxyuser.root.users": "admin",
         "fs.trash.interval": "4320"
     },
- 
     "hdfs-site": {
       "dfs.namenode.safemode.threshold-pct": "0.99"
     },
