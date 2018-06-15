@@ -61,7 +61,7 @@ export ambari_password cluster_name recommendation_strategy
 ## tutorial users
 ## update ambari password to one used by scripts
 export ambari_pass2=${ambari_pass2:-BadPass#1}
-curl  -u admin:admin -H "X-Requested-By: Goll" -X PUT -d "{ \"Users\": { \"user_name\": \"admin\", \"old_password\": \"admin\", \"password\": \"${ambari_pass2}\" }}" ${ambari_host}:8080/api/v1/users/admin
+
 
 echo "Installing Hortonia Bank scripts ..."
 
@@ -129,16 +129,6 @@ cat << EOF > configuration-custom.json
     },
     "kafka-broker": {
       "offsets.topic.replication.factor": "1"
-    },
-    "admin-properties": {
-        "policymgr_external_url": "http://localhost:6080",
-        "db_root_user": "admin",
-        "db_root_password": "BadPass#1",
-        "DB_FLAVOR": "POSTGRES",
-        "db_user": "rangeradmin",
-        "db_password": "BadPass#1",
-        "db_name": "ranger",
-        "db_host": "localhost"
     },
     "ranger-env": {
         "ranger_admin_username": "admin",
