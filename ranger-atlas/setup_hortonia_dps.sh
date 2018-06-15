@@ -23,7 +23,7 @@ export enable_hive_acid=${enable_hive_acid:-true}   #enable Hive ACID?
 export enable_kerberos=${enable_kerberos:-true}
 export kdc_realm=${kdc_realm:-HWX.COM}      #KDC realm
 export ambari_version="${ambari_version:-2.6.2.0}"   #Need Ambari 2.6.0+ to avoid Zeppelin BUG-92211
-
+export ambari_admin=${ambari_admin:-admin}
 #Database passwords
 export db_password=${db_password:-StrongPassword}
 export hive_db_password=${hive_db_password:-H!veRox} #using default user hive on existing MariaDB database
