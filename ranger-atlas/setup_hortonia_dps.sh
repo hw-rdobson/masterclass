@@ -437,7 +437,7 @@ EOF
     fi
 
 echo "**** reset ambari password *****"
-curl  -u admin:admin -H "X-Requested-By: Goll" -X PUT -d "{ \"Users\": { \"user_name\": \"admin\", \"${ambari_pass2}": \"admin\", \"password\": \"${ambari_pass}\" }}" ${ambari_host}:8080/api/v1/users/admin
+#curl  -u admin:admin -H "X-Requested-By: Goll" -X PUT -d "{ \"Users\": { \"user_name\": \"admin\", \"${ambari_pass2}": \"admin\", \"password\": \"${ambari_pass}\" }}" ${ambari_host}:8080/api/v1/users/admin
 
 echo "--------------------------"
 echo "--------------------------"
