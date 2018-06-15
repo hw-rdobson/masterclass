@@ -69,39 +69,12 @@ echo "Installing Hortonia Bank scripts ..."
 cd /tmp
 git clone https://github.com/abajwa-hw/masterclass
 
-groupadd finance
-groupadd business_dev
-groupadd contractor
-groupadd csr
-groupadd etl
-
-useradd -g finance john_finance
-useradd -g business_dev mark_bizdev
-useradd -g contractor jeremy_contractor
-useradd -g csr diane_csr
-useradd -g etl log_monitor
-useradd -g etl etl_user
-
-
-groupadd us_employee
-groupadd eu_employee
-groupadd analyst
-groupadd hr
-groupadd dpo
-
-useradd -g analyst joe_analyst
-useradd -g hr kate_hr
-useradd -g hr sasha_eu_hr
-useradd -g hr ivanna_eu_hr
-useradd -g dpo michelle_dpo
-
-#below users should also be added to us_employee or eu_employee
-usermod -a -G us_employee joe_analyst
-usermod -a -G us_employee kate_hr
-usermod -a -G eu_employee sasha_eu_hr
-usermod -a -G eu_employee ivanna_eu_hr
-usermod -a -G eu_employee michelle_dpo
-
+cd /tmp/masterclass/ranger-atlas/HortoniaMunichSetup
+# Temp fix
+chown -R root:root /tmp/masterclass
+chmod -R 777 /tmp/masterclass
+#chmod +x *.sh
+sh ./04-create-os-users.sh    
 #also need anonymous user for kafka Ranger policy and dpprofiler for DSS
 useradd ANONYMOUS
 useradd dpprofiler
@@ -221,64 +194,8 @@ sed -i.bak "s/\[security\]/\[security\]\nforce_https_protocol=PROTOCOL_TLSv1_2/"
         echo "Adding Hortonia local users ..."
     
           cd /tmp/masterclass/ranger-atlas/HortoniaMunichSetup
-          #./04-create-ambari-users.sh
+          sh ./04-create-ambari-users.sh
 
-users="kate_hr ivanna_eu_hr joe_analyst sasha_eu_hr john_finance mark_bizdev jermy_contractor diane_csr log_monitor etl_user"
-groups="hr analyst us_employee eu_employee finance business_dev contractor csr etl"
-ambari_url="http://${ambari_host}:8080/api/v1"
-
-for user in ${users}; do
-  echo "adding user ${user} to Ambari"
-  curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d "{\"Users/user_name\":\"${user}\",\"Users/password\":\"${ambari_pass}\",\"Users/active\":\"true\",\"Users/admin\":\"false\"}" ${ambari_url}/users 
-done 
-
-echo create groups in Ambari
-for group in ${groups}; do
-  echo "adding group ${group} to Ambari"
-  curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d "{\"Groups/group_name\":\"${group}\"}" ${ambari_url}/groups
-done
-
-echo HR group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"kate_hr", "MemberInfo/group_name":"hr"}' ${ambari_url}/groups/hr/members
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"ivanna_eu_hr", "MemberInfo/group_name":"hr"}' ${ambari_url}/groups/hr/members
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"sasha_eu_hr", "MemberInfo/group_name":"hr"}' ${ambari_url}/groups/hr/members
-
-
-echo analyst group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"joe_analyst", "MemberInfo/group_name":"analyst"}' ${ambari_url}/groups/analyst/members
-
-echo us_employee group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"kate_hr", "MemberInfo/group_name":"us_employee"}' ${ambari_url}/groups/us_employee/members
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"joe_analyst", "MemberInfo/group_name":"us_employee"}' ${ambari_url}/groups/us_employee/members
-
-echo eu_employee group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"ivanna_eu_hr", "MemberInfo/group_name":"eu_employee"}' ${ambari_url}/groups/eu_employee/members
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"sasha_eu_hr", "MemberInfo/group_name":"eu_employee"}' ${ambari_url}/groups/eu_employee/members
-
-echo finance group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"john_finance", "MemberInfo/group_name":"finance"}' ${ambari_url}/groups/finance/members
-
-echo bizdev group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"mark_bizdev", "MemberInfo/group_name":"business_dev"}' ${ambari_url}/groups/business_dev/members
-
-echo contractor group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"jermy_contractor", "MemberInfo/group_name":"contractor"}' ${ambari_url}/groups/contractor/members
-
-echo csr group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"diane_csr", "MemberInfo/group_name":"csr"}' ${ambari_url}/groups/csr/members
-
-echo etl group membership
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"log_monitor", "MemberInfo/group_name":"etl"}' ${ambari_url}/groups/etl/members
-curl -u ${ambari_admin}:${ambari_pass} -H "X-Requested-By: blah" -X POST -d '{"MemberInfo/user_name":"etl_user", "MemberInfo/group_name":"etl"}' ${ambari_url}/groups/etl/members
-    
-
-
-echo add groups to Hive views
-curl -u ${ambari_admin}:${ambari_pass} -i -H "X-Requested-By: blah" -X PUT ${ambari_url}/views/HIVE/versions/1.5.0/instances/AUTO_HIVE_INSTANCE/privileges \
-   --data '[{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"us_employee","principal_type":"GROUP"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"business_dev","principal_type":"GROUP"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"eu_employee","principal_type":"GROUP"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"CLUSTER.ADMINISTRATOR","principal_type":"ROLE"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"CLUSTER.OPERATOR","principal_type":"ROLE"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"SERVICE.OPERATOR","principal_type":"ROLE"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"SERVICE.ADMINISTRATOR","principal_type":"ROLE"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"CLUSTER.USER","principal_type":"ROLE"}}]'
-
-curl -u ${ambari_admin}:${ambari_pass} -i -H 'X-Requested-By: blah' -X PUT ${ambari_url}/views/HIVE/versions/2.0.0/instances/AUTO_HIVE20_INSTANCE/privileges \
-   --data '[{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"us_employee","principal_type":"GROUP"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"business_dev","principal_type":"GROUP"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"eu_employee","principal_type":"GROUP"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"CLUSTER.ADMINISTRATOR","principal_type":"ROLE"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"CLUSTER.OPERATOR","principal_type":"ROLE"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"SERVICE.OPERATOR","principal_type":"ROLE"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"SERVICE.ADMINISTRATOR","principal_type":"ROLE"}},{"PrivilegeInfo":{"permission_name":"VIEW.USER","principal_name":"CLUSTER.USER","principal_type":"ROLE"}}]'
 
         #TODO: fix adding groups to Hive views
         #curl -u admin:${ambari_pass} -i -H "X-Requested-By: blah" -X PUT http://localhost:8080/api/v1/views/HIVE/versions/1.5.0/instances/AUTO_HIVE_INSTANCE/privileges \
